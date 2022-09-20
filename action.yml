@@ -6,6 +6,10 @@ inputs:
     description: "Path of the directory containing the static assets."
     required: true
     default: "_site/"
+  artifact_name:
+    description: "Tarred artifact name."
+    required: false
+    default: "artifact.tar"
   retention-days:
     description: "Duration after which artifact will expire in days."
     required: false
@@ -20,12 +24,13 @@ runs:
         tar \
           --dereference --hard-dereference \
           --directory "$INPUT_PATH" \
-          -cvf "$RUNNER_TEMP/artifact.tar" \
+          -cvf "$RUNNER_TEMP/$INPUT_NAME" \
           --exclude=.git \
           --exclude=.github \
           .
       env:
         INPUT_PATH: ${{ inputs.path }}
+        INPUT_NAME: ${{ inputs.artifact_name }}
 
     # Switch to gtar (GNU tar instead of bsdtar which is the default in the MacOS runners so we can use --hard-dereference)
     - name: Archive artifact
@@ -35,12 +40,13 @@ runs:
         gtar \
           --dereference --hard-dereference \
           --directory "$INPUT_PATH" \
-          -cvf "$RUNNER_TEMP/artifact.tar" \
+          -cvf "$RUNNER_TEMP/$INPUT_NAME" \
           --exclude=.git \
           --exclude=.github \
           .
       env:
         INPUT_PATH: ${{ inputs.path }}
+        INPUT_NAME: ${{ inputs.artifact_name }}
 
     # Massage the paths for Windows only
     - name: Archive artifact
@@ -50,17 +56,18 @@ runs:
         tar \
           --dereference --hard-dereference \
           --directory "$INPUT_PATH" \
-          -cvf "$RUNNER_TEMP\artifact.tar" \
+          -cvf "$RUNNER_TEMP\$INPUT_NAME" \
           --exclude=.git \
           --exclude=.github \
           --force-local \
           "."
       env:
         INPUT_PATH: ${{ inputs.path }}
+        INPUT_NAME: ${{ inputs.artifact_name }}
 
     - name: Upload artifact
       uses: actions/upload-artifact@main
       with:
         name: github-pages
-        path: ${{ runner.temp }}/artifact.tar
+        path: ${{ runner.temp }}/${{ inputs.artifact_name }}
         retention-days: ${{ inputs.retention-days }}
